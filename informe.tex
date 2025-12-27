@@ -1,0 +1,196 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish, es-tabla]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb}
+\usepackage{hyperref}
+\usepackage{booktabs} % Para tablas profesionales
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{xcolor}
+
+% Configuración de hipervínculos
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    citecolor=red,
+}
+
+% Configuración de márgenes
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=3cm}
+
+% Traducción de comandos de algoritmo al español
+\floatname{algorithm}{Algoritmo}
+\renewcommand{\algorithmicrequire}{\textbf{Entrada:}}
+\renewcommand{\algorithmicensure}{\textbf{Salida:}}
+\algrenewcommand\algorithmicwhile{\textbf{Mientras}}
+\algrenewcommand\algorithmicfor{\textbf{Para}}
+\algrenewcommand\algorithmicif{\textbf{Si}}
+\algrenewcommand\algorithmicelse{\textbf{Sino}}
+\algrenewcommand\algorithmicreturn{\textbf{Retornar}}
+
+% Datos del documento
+\title{
+    \vspace{1cm}
+    \Huge \textbf{Informe Técnico} \\
+    \vspace{0.5cm}
+    \Large Análisis de Complejidad y Diseño de Algoritmos para el Problema del Transporte Discreto \\
+    \vspace{1.5cm}
+    \large \textbf{Discrete Logistics} \\
+    \vspace{2cm}
+}
+\author{
+    \textbf{Autores:} \\
+    Adrian Alejandro Souto Morales \\
+    Gabriel Herrera Carrazana \\
+}
+\date{2025}
+
+\begin{document}
+
+    \begin{titlepage}
+        \maketitle
+        \thispagestyle{empty}
+        \vfill
+        \centering
+        \textit{Proyecto Final de Diseño y Análisis de Algoritmos}
+    \end{titlepage}
+
+    \section{Introducción}
+    En \textit{Discrete Logistics}, operamos en un nicho de mercado extremadamente delicado: el transporte transfronterizo de productos de valor incalculable. Este informe aborda el problema computacional de distribuir un conjunto de artículos de alto valor entre un número determinado de transportistas (``mulas''), respetando estrictamente la capacidad de carga y minimizando el riesgo financiero global.
+
+    El objetivo es lograr una distribución del valor total de los artículos lo más equitativa posible, reduciendo el impacto de una pérdida catastrófica si un único transportista es comprometido.
+
+    \section{Definición Formal del Problema}
+    Dado un conjunto de $N$ artículos $A = \{a_1, ..., a_n\}$ y $M$ mulas $M = \{m_1, ..., m_m\}$, buscamos una partición tal que:
+
+    \begin{enumerate}
+        \item \textbf{Restricción de Capacidad:} $\sum_{a_i \in A_j} p_i \le C_j$ para toda mula $m_j$.
+        \item \textbf{Función Objetivo (Equidad):} Minimizar $K$ tal que $|V_j - V_k| \le K$ para todo par de mulas $(j, k)$, donde $V_j$ es el valor total asignado a la mula $j$.
+    \end{enumerate}
+
+    \section{Análisis de Complejidad (Fase 2)}
+    Para determinar la viabilidad computacional, analizamos la complejidad teórica del problema.
+
+    \subsection{NP-Completitud}
+    Demostramos que el problema pertenece a la clase \textbf{NP} y es \textbf{NP-Duro} mediante una reducción desde el \textbf{Problema de la Partición (PARTITION)}.
+
+    \begin{itemize}
+        \item \textbf{Construcción:} Dada una instancia de PARTITION (multiconjunto $S$), construimos una instancia de transporte con $M=2$ mulas, capacidad $T/2$ (donde $T = \sum S_i$) y umbral $K=0$.
+        \item \textbf{Equivalencia:} Existe una solución al problema de transporte con diferencia 0 si y solo si existe una partición perfecta del conjunto $S$.
+    \end{itemize}
+
+    \textbf{Conclusión:} El problema es \textbf{NP-Completo}, lo que justifica el uso de heurísticas para instancias grandes.
+
+    \section{Diseño de Algoritmos (Fase 3)}
+
+    \subsection{Enfoque Exacto: Fuerza Bruta}
+    Este algoritmo garantiza encontrar la solución óptima explorando todo el espacio de búsqueda.
+
+    \begin{algorithm}[H]
+        \caption{Fuerza Bruta para Transporte Discreto}
+        \begin{algorithmic}[1]
+            \Require Artículos $A$, Mulas $M$
+            \Ensure Mejor Asignación $S_{opt}$
+            \State $MejorDiferencia \gets \infty$
+            \For{cada asignación $S$ posible de $A$ en $M$} \Comment{Complejidad $O(M^N)$}
+            \If{$S$ cumple restricciones de peso}
+                \State $Dif \gets \max(V(m)) - \min(V(m))$
+                \If{$Dif < MejorDiferencia$}
+                    \State $MejorDiferencia \gets Dif$
+                    \State $S_{opt} \gets S$
+                \EndIf
+            \EndIf
+            \EndFor
+            \State \Return $S_{opt}$
+        \end{algorithmic}
+    \end{algorithm}
+    \textbf{Complejidad:} $O(M^N \cdot (N + M^2))$. Inviable para $N > 12$.
+
+    \subsection{Heurística Voraz (Greedy)}
+    Estrategia eficiente que ordena los artículos por valor y los asigna a la mula con menor carga actual para balancear.
+
+    \begin{algorithm}[H]
+        \caption{Heurística Voraz (Greedy)}
+        \begin{algorithmic}[1]
+            \Require Artículos $A$, Mulas $M$
+            \State Ordenar $A$ descendentemente por valor
+            \For{cada artículo $art$ en $A$}
+                \State $Candidata \gets$ Mula válida con menor $Valor_{actual}$
+                \If{$Candidata$ existe}
+                    \State Asignar $art$ a $Candidata$
+                \Else
+                    \State \Return Error (No hay solución factible)
+                \EndIf
+            \EndFor
+            \State \Return Asignación final
+        \end{algorithmic}
+    \end{algorithm}
+    \textbf{Complejidad:} $O(N \log N + N \cdot M)$.
+
+    \subsection{Metaheurística: Búsqueda Local}
+    Mejora la solución voraz aplicando movimientos de \textit{Relocate} y \textit{Swap} entre la mula más cargada y la menos cargada.
+
+    \begin{algorithm}[H]
+        \caption{Búsqueda Local (Hill Climbing)}
+        \begin{algorithmic}[1]
+            \Require Solución Inicial $S$
+            \Repeat
+                \State $Mejora \gets Falso$
+                \State $M_{max} \gets$ Mula con mayor valor
+                \State $M_{min} \gets$ Mula con menor valor
+                \State \textbf{Intento 1:} Mover artículo de $M_{max}$ a $M_{min}$
+                \If{movimiento reduce diferencia} $Mejora \gets Verdadero$ \EndIf
+                \State \textbf{Intento 2:} Intercambiar artículos entre $M_{max}$ y $M_{min}$
+                \If{intercambio reduce diferencia} $Mejora \gets Verdadero$ \EndIf
+            \Until{$!Mejora$ o límite iteraciones}
+        \end{algorithmic}
+    \end{algorithm}
+
+    \section{Análisis Experimental (Fase 4)}
+    Los experimentos fueron realizados en Python comparando los tres enfoques.
+
+    \subsection{Calidad de la Solución}
+    Se probó con instancias pequeñas ($N=4$ a $10$, $M=2$) para comparar contra el óptimo global.
+
+    \begin{table}[H]
+        \centering
+        \caption{Diferencia promedio respecto al Óptimo (Gap en \$)}
+        \label{tab:resultados}
+        \begin{tabular}{@{}ccc@{}}
+            \toprule
+            \textbf{N (Artículos)} & \textbf{Gap Greedy} & \textbf{Gap Búsqueda Local} \\ \midrule
+            4  & 0.0  & 0.0 \\
+            5  & 9.6  & 0.0 \\
+            6  & 0.8  & 0.8 \\
+            7  & 7.2  & 0.0 \\
+            8  & 48.0 & 4.8 \\
+            9  & 12.0 & 2.8 \\
+            10 & 15.2 & 8.4 \\ \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{calidad_solucion.png}
+        \caption{El algoritmo Greedy presenta picos de error altos (ej. N=8), mientras que la Búsqueda Local reduce drásticamente esta brecha, acercándose al óptimo.}
+    \end{figure}
+
+    \subsection{Escalabilidad}
+    Se realizaron pruebas de estrés con $N$ hasta 500.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{escalabilidad_tiempo.png}
+        \caption{La Fuerza Bruta crece exponencialmente, volviéndose inútil para $N>15$. Los algoritmos aproximados se mantienen por debajo de 1 segundo incluso con 500 artículos.}
+    \end{figure}
+
+    \section{Conclusión}
+    El análisis teórico y experimental confirma que el problema es intratable por métodos exactos para tamaños realistas. Sin embargo, la implementación de la **Metaheurística de Búsqueda Local** ha demostrado ser capaz de encontrar soluciones con un error promedio muy bajo ($< 5\%$ respecto al valor total en las pruebas) en tiempos de ejecución insignificantes, cumpliendo así con los requisitos operativos de \textit{Discrete Logistics}.
+
+\end{document}
