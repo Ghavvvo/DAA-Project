@@ -1,0 +1,443 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish, es-tabla]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb}
+\usepackage{hyperref}
+\usepackage{booktabs} % Para tablas profesionales
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{xcolor}
+
+% Configuración de hipervínculos
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    citecolor=red,
+}
+
+% Configuración de márgenes
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=3cm}
+
+% Traducción de comandos de algoritmo al español
+\floatname{algorithm}{Algoritmo}
+\renewcommand{\algorithmicrequire}{\textbf{Entrada:}}
+\renewcommand{\algorithmicensure}{\textbf{Salida:}}
+\algrenewcommand\algorithmicwhile{\textbf{Mientras}}
+\algrenewcommand\algorithmicfor{\textbf{Para}}
+\algrenewcommand\algorithmicif{\textbf{Si}}
+\algrenewcommand\algorithmicelse{\textbf{Sino}}
+\algrenewcommand\algorithmicreturn{\textbf{Retornar}}
+\algrenewcommand\algorithmicend{\textbf{Fin}}
+\algrenewcommand\algorithmicdo{\textbf{hacer}}
+\algrenewcommand\algorithmicthen{\textbf{entonces}}
+\algrenewcommand\algorithmicrepeat{\textbf{Repetir}}
+\algrenewcommand\algorithmicuntil{\textbf{Hasta que}}
+
+% Datos del documento
+\title{
+    \vspace{1cm}
+    \Huge \textbf{Informe Técnico} \\
+    \vspace{0.5cm}
+    \Large Análisis de Complejidad y Diseño de Algoritmos para el Problema del Transporte Discreto \\
+    \vspace{1.5cm}
+    \large \textbf{Discrete Logistics} \\
+    \vspace{2cm}
+}
+\author{
+    \textbf{Autores:} \\
+    Adrian Alejandro Souto Morales \\
+    Gabriel Herrera Carrazana \\
+}
+\date{2025}
+
+\begin{document}
+
+    \begin{titlepage}
+        \maketitle
+        \thispagestyle{empty}
+        \vfill
+        \centering
+        \textit{Proyecto Final de Diseño y Análisis de Algoritmos}
+    \end{titlepage}
+
+    \section{Introducción}
+    En \textit{Discrete Logistics}, operamos en un nicho de mercado extremadamente delicado: el transporte transfronterizo de productos de valor incalculable y alta sensibilidad. Nuestros clientes confían en nosotros para mover artículos únicos y a menudo irremplazables, donde la discreción, la seguridad y la mitigación de riesgos son absolutamente críticas. La pérdida de una parte significativa de un envío puede tener consecuencias devastadoras.
+
+    Nos enfrentamos a un desafío logístico y estratégico fundamental en la preparación de cada operación de transporte internacional. Disponemos de un conjunto de artículos de alto valor (ej. obras de arte, documentos clasificados, prototipos tecnológicos) que necesitan ser movidos. Cada uno de estos artículos tiene un peso y un valor intrínseco que representa su importancia y el riesgo asociado a su pérdida.
+
+    Para realizar estos envíos, utilizamos una red de transportistas personales, a quienes llamamos ``mulas''. Cada mula tiene una capacidad máxima de peso que puede transportar discretamente como equipaje personal sin levantar sospechas.
+
+    El problema que necesitamos resolver es: ¿Cómo podemos seleccionar y distribuir los artículos disponibles entre las mulas designadas para el transporte, de modo que minimicemos el riesgo general del envío?
+
+    Esto implica tomar decisiones críticas bajo las siguientes condiciones:
+    \begin{enumerate}
+        \item Ninguna mula puede exceder su capacidad máxima de peso con los artículos que se le asignen.
+        \item Para maximizar la probabilidad de que, si una mula es interceptada o comprometida, la pérdida no sea catastrófica, necesitamos distribuir el valor total de los artículos transportados de la manera más equitativa posible entre las mulas. Es decir, queremos que la diferencia máxima en el valor total de los artículos contenidos en el equipaje de cualquier par de mulas sea la menor posible.
+        \item Hay una cantidad máxima de mulas disponibles.
+    \end{enumerate}
+
+    Una distribución desequilibrada del valor entre las mulas aumentaría drásticamente el riesgo de una pérdida masiva si la mula con la carga ``más valiosa'' fuera comprometida. Necesitamos una estrategia de empaquetado que balancee el valor de forma óptima, respetando las limitaciones de peso de cada transportista y utilizando el número exacto de mulas requerido.Si no es posible cumplir con estas condiciones para el conjunto de artículos y mulas dado, necesitamos saberlo.
+
+    \subsection{Justificación del Análisis de Complejidad}
+    Realizar un análisis de complejidad es un paso estratégico fundamental antes de acometer el diseño de algoritmos. Este análisis nos permite determinar la intratabilidad inherente de un problema y, por tanto, establecer si es factible encontrar soluciones óptimas en un tiempo de ejecución razonable. Para el problema del Transporte Discreto, este análisis determina si Discrete Logistics puede garantizar a sus clientes una distribución de riesgo probadamente óptima, o si debe confiar en soluciones ``suficientemente buenas'' que sean computacionalmente rápidas. La conclusión de este análisis justificará la necesidad de explorar algoritmos de aproximación o heurísticas eficientes.
+
+    \section{Definición Formal del Problema}
+    Dado un conjunto de $N$ artículos $A = \{a_1, ..., a_n\}$ y $M$ mulas $M = \{m_1, ..., m_m\}$, buscamos una partición tal que:
+
+    \begin{enumerate}
+        \item \textbf{Restricción de Capacidad:} $\sum_{a_i \in A_j} p_i \le C_j$ para toda mula $m_j$.
+        \item \textbf{Función Objetivo (Equidad):} Minimizar $K$ tal que $|V_j - V_k| \le K$ para todo par de mulas $(j, k)$, donde $V_j$ es el valor total asignado a la mula $j$.
+    \end{enumerate}
+
+    \section{Análisis de Complejidad (Fase 2)}
+    Para determinar la viabilidad computacional, analizamos la complejidad teórica del problema.
+
+    \subsection{Pertenencia a la Clase NP}
+    Argumentamos que el problema de decisión del Transporte Discreto pertenece a la clase de complejidad \textbf{NP} (Nondeterministic Polynomial time). Un problema está en NP si una solución candidata puede ser verificada en tiempo polinomial.
+
+    Para demostrarlo, definimos un algoritmo verificador que opera sobre un ``certificado''. El certificado, en este caso, puede ser representado como un array de $N$ enteros, $Asignacion[1..N]$, donde $Asignacion[i] = j$ significa que el artículo $a_i$ se asigna a la mula $m_j$.
+
+    \textbf{Algoritmo Verificador:}
+
+    Dada una asignación candidata (el certificado):
+    \begin{enumerate}
+        \item \textbf{Verificación de Capacidad (Tiempo Polinomial):}
+        \begin{itemize}
+            \item Para cada una de las $M$ mulas, inicializar un $peso\_actual$ en 0.
+            \item Iterar sobre los $N$ artículos. Para cada artículo $a_i$, sumar su peso $p_i$ al $peso\_actual$ de la mula a la que ha sido asignado.
+            \item Después de procesar todos los artículos, comprobar para cada una de las $M$ mulas si su $peso\_actual$ es menor o igual a su capacidad $C_j$.
+            \item Este proceso implica $N$ sumas y $M$ comparaciones, lo cual tiene una complejidad de $O(N + M)$.
+        \end{itemize}
+
+        \item \textbf{Verificación de Equidad de Valor (Tiempo Polinomial):}
+        \begin{itemize}
+            \item Para cada una de las $M$ mulas, calcular el valor total de los artículos asignados, $V_j = \sum_{a_i \in A_j} v_i$. Esto requiere $O(N)$ operaciones.
+            \item Iterar sobre todos los pares de mulas $(m_j, m_k)$. Hay $M(M-1)/2$ pares.
+            \item Para cada par, calcular la diferencia de valor $|V_j - V_k|$ y comprobar si es mayor que $K$. Si alguna diferencia excede $K$, la condición falla.
+            \item Este proceso tiene una complejidad de $O(M^2)$.
+        \end{itemize}
+    \end{enumerate}
+
+    Dado que ambas verificaciones se pueden realizar en un tiempo polinomial ($O(N + M^2)$), el problema de decisión del Transporte Discreto pertenece a la clase \textbf{NP}.
+
+    \subsection{Prueba de NP-Dureza por Reducción}
+    Para demostrar que el problema es NP-duro, realizaremos una reducción en tiempo polinomial desde un problema canónico conocido por ser NP-completo: el \textbf{Problema de la Partición (PARTITION)}.
+
+    \subsubsection{Selección del Problema Canónico: PARTITION}
+    El problema PARTITION se define de la siguiente manera: dado un multiconjunto $S$ de enteros positivos, ¿se puede particionar $S$ en dos subconjuntos $S_1$ y $S_2$ tal que la suma de los elementos en $S_1$ sea igual a la suma de los elementos en $S_2$?
+
+    \subsubsection{Construcción de la Reducción}
+    Dada una instancia arbitraria del problema PARTITION, definida por un multiconjunto de enteros $S = \{s_1, s_2, ..., s_n\}$, construimos una instancia del problema del Transporte Discreto de la siguiente manera:
+
+    \begin{itemize}
+        \item \textbf{Artículos:} Para cada entero $s_i$ en $S$, creamos un artículo $a_i$ con $peso = s_i$ y $valor = s_i$. Al igualar peso y valor, forzamos a que cualquier equilibrio en valor implique un equilibrio en peso, vinculando así las dos restricciones.
+        \item \textbf{Mulas:} Creamos exactamente dos mulas ($M = 2$), $m_1$ y $m_2$.
+        \item \textbf{Capacidad:} Sea $T = \sum s_i$ la suma total de todos los enteros en $S$. Establecemos la capacidad de peso de ambas mulas en $C_1 = C_2 = T/2$.
+        \item \textbf{Umbral de Valor:} Establecemos el umbral de diferencia de valor en $K = 0$.
+    \end{itemize}
+
+    \subsubsection{Demostración de Equivalencia}
+    Ahora debemos demostrar que la instancia de PARTITION tiene una solución ``sí'' si y solo si la instancia construida del Transporte Discreto también tiene una solución ``sí''.
+
+    \textbf{($\Rightarrow$) Si PARTITION tiene solución:}
+
+    Asumamos que la instancia de PARTITION admite una solución. Esto implica la existencia de dos subconjuntos disjuntos $S_1$ y $S_2$ tales que $S = S_1 \cup S_2$ y $\sum S_1 = \sum S_2$. Si la suma total $T$ es impar, la instancia de PARTITION es trivialmente irresoluble. En nuestra construcción, esto resultaría en una capacidad no entera $T/2$, que no puede ser satisfecha por artículos con pesos enteros, haciendo nuestra instancia también irresoluble y manteniendo la validez de la reducción.
+
+    Si $T$ es par, entonces $\sum S_1 = \sum S_2 = T/2$. Construimos una solución para el Transporte Discreto asignando los artículos correspondientes a los enteros de $S_1$ a la mula $m_1$ y los correspondientes a $S_2$ a la mula $m_2$.
+
+    \begin{itemize}
+        \item \textbf{Restricción de Capacidad:} El peso total asignado a $m_1$ es $\sum S_1 = T/2$, que es igual a su capacidad. Lo mismo ocurre con $m_2$. La restricción se cumple.
+        \item \textbf{Restricción de Valor:} El valor total en $m_1$ es $\sum S_1$ y en $m_2$ es $\sum S_2$. Como $\sum S_1 = \sum S_2$, la diferencia de valor es 0, que es $\leq K=0$. La restricción se cumple.
+    \end{itemize}
+
+    Por lo tanto, si PARTITION tiene solución, nuestra instancia de Transporte Discreto también.
+
+    \textbf{($\Leftarrow$) Si el Transporte Discreto tiene solución:}
+
+    A la inversa, asumamos que la instancia construida del Transporte Discreto admite una solución. Esto implica que existe una asignación de artículos a las mulas $m_1$ y $m_2$ que satisface las restricciones.
+
+    \begin{itemize}
+        \item La diferencia de valor entre $m_1$ y $m_2$ debe ser $\leq K=0$, lo que implica que es exactamente 0. Por lo tanto, $valor\_total(m_1) = valor\_total(m_2)$.
+        \item Dado que $valor = peso$ para cada artículo, esto implica que $peso\_total(m_1) = peso\_total(m_2)$.
+        \item La suma total de los pesos de todos los artículos es $T$. Como se distribuyen entre dos mulas con pesos totales iguales, cada una debe tener un peso total de $T/2$, cumpliendo así la restricción de capacidad.
+        \item Si definimos $S_1$ como el conjunto de enteros originales correspondientes a los artículos en $m_1$ y $S_2$ los correspondientes a $m_2$, entonces $\sum S_1 = \sum S_2 = T/2$. Esto constituye una solución válida para el problema PARTITION.
+    \end{itemize}
+
+    \subsubsection{Análisis de Complejidad de la Reducción}
+    La transformación de una instancia de PARTITION a una del Transporte Discreto implica:
+    \begin{itemize}
+        \item Calcular la suma total $T$, que requiere $O(n)$ operaciones.
+        \item Crear $n$ artículos, donde cada creación es una operación de tiempo constante.
+        \item Definir dos mulas y sus capacidades.
+    \end{itemize}
+
+    El proceso completo se realiza en tiempo lineal con respecto al tamaño de la entrada de PARTITION, por lo que la reducción es polinomial.
+
+    \subsection{Conclusión: NP-Completitud}
+    Hemos demostrado que el problema del Transporte Discreto está en la clase NP y que es NP-duro. Por definición, un problema que cumple ambas condiciones es \textbf{NP-completo}. Esta clasificación confirma su intratabilidad computacional, lo que significa que es altamente improbable que exista un algoritmo que pueda encontrar la solución óptima para todas las instancias en tiempo polinomial. Ante esta realidad, la siguiente fase de nuestro proyecto se centrará en el diseño de algoritmos prácticos para abordarlo.
+
+    \section{Diseño de Algoritmos (Fase 3)}
+    Tras demostrar la NP-completitud del problema, reconocemos que la búsqueda de soluciones óptimas para instancias de tamaño realista es computacionalmente inviable. Por lo tanto, esta sección explora dos enfoques algorítmicos complementarios. Primero, se describe un algoritmo de fuerza bruta que, aunque ineficiente, garantiza encontrar la solución óptima y sirve como una valiosa referencia para evaluar la calidad de otras soluciones en casos pequeños. Segundo, se diseña una heurística voraz y eficiente, concebida para encontrar soluciones de alta calidad en un tiempo razonable para los casos de uso más realistas.
+
+    \subsection{Enfoque Exacto: Fuerza Bruta}
+    \subsubsection{Descripción de la Estrategia}
+    El algoritmo de fuerza bruta explora de manera exhaustiva todo el espacio de soluciones posibles. La lógica consiste en generar sistemáticamente cada posible asignación de cada uno de los $N$ artículos a cada una de las $M$ mulas. Para cada asignación completa generada, el algoritmo realiza las siguientes comprobaciones:
+    \begin{itemize}
+        \item Verifica si la asignación es válida, es decir, si para ninguna mula se excede su capacidad de peso.
+        \item Si la asignación es válida, calcula la métrica de calidad: la diferencia máxima de valor total entre cualquier par de mulas.
+        \item El algoritmo mantiene un registro de la mejor asignación válida encontrada hasta el momento (aquella con la menor diferencia máxima de valor) y la actualiza cada vez que encuentra una solución superior.
+    \end{itemize}
+
+    \subsubsection{Análisis de Complejidad}
+    La complejidad computacional de este enfoque es su principal inconveniente. Si hay $N$ artículos y $M$ mulas, cada artículo puede ser asignado a cualquiera de las $M$ mulas. Esto da lugar a un total de $M^N$ posibles asignaciones. Para cada una, se requiere tiempo polinomial para validar las restricciones y calcular la métrica. Por lo tanto, la complejidad temporal total tiene un orden de $O(M^N \cdot (N + M^2))$, que es exponencial. Esta complejidad hace que el método sea practicable únicamente para instancias muy pequeñas del problema.
+
+    \subsubsection{Pseudocódigo}
+    \begin{algorithm}[H]
+        \caption{Fuerza Bruta para Transporte Discreto}
+        \begin{algorithmic}[1]
+            \Require Artículos $A$, Mulas $M$
+            \Ensure Mejor Asignación
+            \State $Mejor\_Diferencia \gets \infty$
+            \State $Mejor\_Asignacion \gets$ NULO
+            \State
+            \State \textbf{// Generar todas las asignaciones posibles ($M^N$ iteraciones)}
+            \For{cada asignación $S$ posible de $A$ en $M$}
+                \State $Es\_Valida \gets$ VERDADERO
+                \State
+                \State \textbf{// 1. Verificar Capacidades}
+                \For{cada mula $m$ en $M$}
+                    \State $Peso\_Total \gets$ Suma de pesos de artículos asignados a $m$ en $S$
+                    \If{$Peso\_Total > Capacidad(m)$}
+                        \State $Es\_Valida \gets$ FALSO
+                        \State \textbf{break}
+                    \EndIf
+                \EndFor
+                \State
+                \State \textbf{// 2. Evaluar Diferencia de Valor (solo si es válida)}
+                \If{$Es\_Valida$ ES VERDADERO}
+                    \State $Max\_Valor \gets \max(Valor\_Total(m)$ para todo $m$ en $M)$
+                    \State $Min\_Valor \gets \min(Valor\_Total(m)$ para todo $m$ en $M)$
+                    \State $Diferencia\_Actual \gets Max\_Valor - Min\_Valor$
+                    \State
+                    \If{$Diferencia\_Actual < Mejor\_Diferencia$}
+                        \State $Mejor\_Diferencia \gets Diferencia\_Actual$
+                        \State $Mejor\_Asignacion \gets S$
+                    \EndIf
+                \EndIf
+            \EndFor
+            \State
+            \State \Return $Mejor\_Asignacion$
+        \end{algorithmic}
+    \end{algorithm}
+    \textbf{Complejidad:} $O(M^N \cdot (N + M^2))$.
+
+    \subsection{Heurística Voraz (Greedy)}
+    \subsubsection{Descripción de la Estrategia}
+    Proponemos una heurística voraz (o greedy) diseñada para construir rápidamente una solución de alta calidad. La estrategia se basa en tomar decisiones que parecen óptimas a nivel local en cada paso, con la esperanza de que conduzcan a una buena solución global.
+
+    El algoritmo procede de la siguiente manera:
+    \begin{enumerate}
+        \item \textbf{Ordenar Artículos:} Primero, se ordenan todos los artículos de mayor a menor valor. La intuición es que al colocar los artículos más ``problemáticos'' (los de mayor valor) primero, se tienen más opciones para balancear la carga.
+        \item \textbf{Asignación Iterativa:} Se itera a través de la lista de artículos ya ordenada.
+        \item \textbf{Criterio de Selección:} Para cada artículo, se busca la mula ``más adecuada''. La mula más adecuada es aquella que cumple dos criterios:
+        \begin{itemize}
+            \item Debe tener capacidad de peso suficiente para aceptar el artículo actual.
+            \item Entre todas las mulas que cumplen el criterio anterior, se elige aquella que actualmente tiene la suma de valor total más baja. Esta elección busca activamente balancear la distribución de valor en cada paso.
+        \end{itemize}
+        \item \textbf{Manejo de Fallos:} Si en algún punto un artículo no puede ser asignado a ninguna mula (porque ninguna tiene suficiente capacidad restante), el algoritmo concluye que no es posible encontrar una solución con las restricciones dadas.
+    \end{enumerate}
+
+    \subsubsection{Análisis de No-Optimalidad}
+    Este enfoque es una heurística porque las decisiones locales no garantizan la optimalidad global. Considere un escenario con 2 mulas ($M=2$) con capacidad de peso suficiente (ej. 20) y 5 artículos con los siguientes valores (y pesos iguales al valor): $A=5, B=5, C=4, D=4, E=4$.
+
+    \textbf{Comportamiento Voraz:}
+    \begin{enumerate}
+        \item Ordena los artículos: 5, 5, 4, 4, 4.
+        \item Asigna 5 a Mula 1 (Suma: 5).
+        \item Asigna 5 a Mula 2 (Suma: 5).
+        \item Asigna 4 a Mula 1 (Suma: 9).
+        \item Asigna 4 a Mula 2 (Suma: 9).
+        \item Asigna el último 4 a Mula 1 (Suma: 13).
+    \end{enumerate}
+    \textbf{Resultado Voraz:} Mula 1 = 13, Mula 2 = 9. Diferencia = 4.
+
+    \textbf{Solución Óptima:}
+    \begin{itemize}
+        \item Mula 1: $5 + 5 = 10$.
+        \item Mula 2: $4 + 4 + 4 = 12$.
+    \end{itemize}
+    \textbf{Resultado Óptimo:} Diferencia = 2.
+
+    En este caso, la estrategia voraz produce una diferencia de valor el doble de grande que la óptima, demostrando que no garantiza la mejor solución global.
+
+    \subsubsection{Análisis de Complejidad}
+    La complejidad computacional del algoritmo voraz es significativamente más baja que la del enfoque de fuerza bruta:
+    \begin{enumerate}
+        \item \textbf{Ordenación inicial:} El paso dominante es la ordenación de los $N$ artículos por valor, que tiene una complejidad de $O(N \log N)$.
+        \item \textbf{Asignación:} El bucle principal itera $N$ veces (una por cada artículo). Dentro del bucle, se debe encontrar la mejor mula entre las $M$ disponibles, lo que toma $O(M)$ tiempo. Por lo tanto, esta fase tiene una complejidad de $O(N \cdot M)$.
+    \end{enumerate}
+
+    La complejidad total del algoritmo es $O(N \log N + N \cdot M)$, que es de tiempo polinomial y, por lo tanto, muy eficiente y escalable para instancias grandes del problema.
+
+    \subsubsection{Pseudocódigo}
+    \begin{algorithm}[H]
+        \caption{Heurística Voraz (Greedy)}
+        \begin{algorithmic}[1]
+            \Require Artículos $A$, Mulas $M$
+            \Ensure Asignación de artículos a mulas
+            \State \textbf{// Ordenar de mayor a menor valor} ($O(N \log N)$)
+            \State Ordenar $A$ descendentemente por valor
+            \State
+            \State \textbf{// Inicializar mulas}
+            \For{cada mula $m$ en $M$}
+                \State $m.peso\_actual \gets 0$
+                \State $m.valor\_actual \gets 0$
+                \State $m.articulos \gets$ ListaVacia
+            \EndFor
+            \State
+            \State \textbf{// Proceso de asignación} ($O(N \cdot M)$)
+            \For{cada articulo $art$ en $A$}
+                \State $Mula\_Candidata \gets$ NULO
+                \State $Menor\_Valor\_Encontrado \gets \infty$
+                \State
+                \State \textbf{// Buscar la mula válida con menos carga de valor actual}
+                \For{cada mula $m$ en $M$}
+                    \If{$(m.peso\_actual + art.peso) \leq m.capacidad$}
+                        \If{$m.valor\_actual < Menor\_Valor\_Encontrado$}
+                            \State $Menor\_Valor\_Encontrado \gets m.valor\_actual$
+                            \State $Mula\_Candidata \gets m$
+                        \EndIf
+                    \EndIf
+                \EndFor
+                \State
+                \State \textbf{// Asignar o reportar fallo}
+                \If{$Mula\_Candidata$ ES DISTINTO DE NULO}
+                    \State Agregar $art$ a $Mula\_Candidata.articulos$
+                    \State $Mula\_Candidata.peso\_actual \gets Mula\_Candidata.peso\_actual + art.peso$
+                    \State $Mula\_Candidata.valor\_actual \gets Mula\_Candidata.valor\_actual + art.valor$
+                \Else
+                    \State \Return ERROR ``No es posible asignar el artículo bajo esta heurística''
+                \EndIf
+            \EndFor
+            \State
+            \State \Return $M$ (con sus asignaciones)
+        \end{algorithmic}
+    \end{algorithm}
+    \textbf{Complejidad:} $O(N \log N + N \cdot M)$.
+
+    \subsection{Metaheurística: Búsqueda Local}
+    \subsubsection{Mejora Algorítmica: Hill Climbing}
+    Aunque la estrategia voraz es eficiente, es propensa a quedar atrapada en ``óptimos locales''. Para cumplir con los estándares de optimización avanzada y mitigar el riesgo de distribuciones subóptimas, Discrete Logistics implementará una etapa de post-procesamiento basada en Búsqueda Local.
+
+    \textbf{Lógica de la Metaheurística:} Esta fase toma la solución completa generada por el algoritmo voraz y trata de mejorarla mediante ``movimientos'' o intercambios entre mulas. El objetivo es reducir la diferencia entre la mula más cargada (en valor) y la menos cargada.
+
+    Se definen dos tipos de movimientos vecinos:
+    \begin{enumerate}
+        \item \textbf{Reubicación (Relocate):} Mover un artículo de la mula con mayor valor total a la mula con menor valor total (si la capacidad lo permite).
+        \item \textbf{Intercambio (Swap):} Intercambiar un artículo de la mula de mayor valor con un artículo de la mula de menor valor, tal que la diferencia global de valor se reduzca.
+    \end{enumerate}
+
+    Este proceso se repite iterativamente hasta que no se encuentran movimientos que mejoren la solución o se alcance un límite de iteraciones. Este enfoque garantiza que la solución final sea siempre igual o mejor que la obtenida por la estrategia voraz.
+
+    \subsubsection{Análisis de Complejidad de la Metaheurística}
+    La fase de construcción voraz mantiene su complejidad de $O(N \log N + N \cdot M)$. La fase de Búsqueda Local depende del número de mejoras posibles. En el peor caso teórico, podría ser pseudo-polinomial dependiendo de los valores, pero en la práctica se suele limitar por un número máximo de iteraciones $K$ (ej. 1000 iteraciones).
+
+    En cada iteración de mejora, revisamos los artículos de las mulas con carga máxima y mínima (aproximadamente $N/M$ artículos). Por tanto, la complejidad efectiva es $O(N \log N + K \cdot (N/M)^2)$. Dado que $K$ y $N$ son manejables en escenarios logísticos reales, el algoritmo sigue siendo extremadamente eficiente comparado con la fuerza bruta, ofreciendo ahora una calidad de solución superior al evitar óptimos locales simples.
+
+    \subsubsection{Pseudocódigo}
+    \begin{algorithm}[H]
+        \caption{Heurística con Búsqueda Local (Hill Climbing)}
+        \begin{algorithmic}[1]
+            \Require Artículos $A$, Mulas $M$
+            \Ensure Asignación mejorada
+            \State \textbf{// FASE 1: Construcción Voraz}
+            \State Ordenar $A$ descendentemente por valor
+            \For{cada articulo $art$ en $A$}
+                \State $Mejor\_Mula \gets$ Mula con menor valor actual que pueda cargar $art$
+                \If{$Mejor\_Mula$ existe}
+                    \State Asignar $art$ a $Mejor\_Mula$
+                \Else
+                    \State \Return ERROR
+                \EndIf
+            \EndFor
+            \State
+            \State \textbf{// FASE 2: Refinamiento (Búsqueda Local)}
+            \State $Mejora \gets$ VERDADERO
+            \While{$Mejora$ ES VERDADERO}
+                \State $Mejora \gets$ FALSO
+                \State $M_{max} \gets$ Mula con mayor valor total
+                \State $M_{min} \gets$ Mula con menor valor total
+                \State $Dif_{actual} \gets M_{max}.valor - M_{min}.valor$
+                \State
+                \State \textbf{// Intento 1: Mover artículo}
+                \For{cada $a$ en $M_{max}.articulos$}
+                    \If{$M_{min}$ puede cargar $a$ Y mejora la diferencia}
+                        \State Mover $a$ de $M_{max}$ a $M_{min}$
+                        \State $Mejora \gets$ VERDADERO
+                        \State \textbf{break}
+                    \EndIf
+                \EndFor
+                \State
+                \State \textbf{// Intento 2: Intercambio}
+                \If{NO $Mejora$}
+                    \For{cada $a$ en $M_{max}$ Y cada $b$ en $M_{min}$}
+                        \If{Intercambio válido Y mejora diferencia}
+                            \State Intercambiar $a$ y $b$
+                            \State $Mejora \gets$ VERDADERO
+                            \State \textbf{break}
+                        \EndIf
+                    \EndFor
+                \EndIf
+            \EndWhile
+            \State \Return $M$
+        \end{algorithmic}
+    \end{algorithm}
+
+    \section{Análisis Experimental (Fase 4)}
+    Los experimentos fueron realizados en Python comparando los tres enfoques.
+
+    \subsection{Calidad de la Solución}
+    Se probó con instancias pequeñas ($N=4$ a $10$, $M=2$) para comparar contra el óptimo global.
+
+    \begin{table}[H]
+        \centering
+        \caption{Diferencia promedio respecto al Óptimo (Gap en \$)}
+        \label{tab:resultados}
+        \begin{tabular}{@{}ccc@{}}
+            \toprule
+            \textbf{N (Artículos)} & \textbf{Gap Greedy} & \textbf{Gap Búsqueda Local} \\ \midrule
+            4  & 0.0  & 0.0 \\
+            5  & 9.6  & 0.0 \\
+            6  & 0.8  & 0.8 \\
+            7  & 7.2  & 0.0 \\
+            8  & 48.0 & 4.8 \\
+            9  & 12.0 & 2.8 \\
+            10 & 15.2 & 8.4 \\ \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{calidad_solucion.png}
+        \caption{El algoritmo Greedy presenta picos de error altos (ej. N=8), mientras que la Búsqueda Local reduce drásticamente esta brecha, acercándose al óptimo.}
+    \end{figure}
+
+    \subsection{Escalabilidad}
+    Se realizaron pruebas de estrés con $N$ hasta 500.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{escalabilidad_tiempo.png}
+        \caption{La Fuerza Bruta crece exponencialmente, volviéndose inútil para $N>15$. Los algoritmos aproximados se mantienen por debajo de 1 segundo incluso con 500 artículos.}
+    \end{figure}
+
+    \section{Conclusión}
+    El análisis teórico y experimental confirma que el problema es intratable por métodos exactos para tamaños realistas. Sin embargo, la implementación de la Metaheurística de Búsqueda Local ha demostrado ser capaz de encontrar soluciones con un error promedio muy bajo ($< 5\%$ respecto al valor total en las pruebas) en tiempos de ejecución insignificantes, cumpliendo así con los requisitos operativos de \textit{Discrete Logistics}.
+
+\end{document}
