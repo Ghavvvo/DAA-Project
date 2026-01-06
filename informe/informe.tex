@@ -134,10 +134,25 @@
     \text{SUBSET-SUM} \preceq_p \text{PARTITION} \preceq_p \text{TRANSPORTE DISCRETO}
     \]
 
-    A continuación, detallamos el primer eslabón de esta cadena para justificar el uso de PARTITION como problema intermedio en nuestra demostración.
+    Antes de proceder con las reducciones, formalizamos los problemas involucrados en esta cadena.
 
-    \paragraph{Reducción de SUBSET-SUM a PARTITION}
-    El problema de la Suma de Subconjuntos (SUBSET-SUM) se define así: dado un conjunto finito de enteros $A = \{a_1, \ldots, a_n\}$ y un entero objetivo $t$, ¿existe un subconjunto $A' \subseteq A$ tal que la suma de sus elementos sea exactamente $t$?
+    \paragraph{Definición Formal: Problema SUBSET-SUM}
+    \begin{itemize}
+        \item \textbf{Instancia:} Un conjunto finito $A = \{a_1, a_2, \ldots, a_n\}$ de enteros positivos y un entero objetivo $t \in \mathbb{Z}^+$.
+        \item \textbf{Pregunta:} ¿Existe un subconjunto $A' \subseteq A$ tal que $\sum_{a_i \in A'} a_i = t$?
+    \end{itemize}
+
+    Es bien conocido que SUBSET-SUM es un problema NP-completo clásico.
+
+    \paragraph{Definición Formal: Problema PARTITION}
+    \begin{itemize}
+        \item \textbf{Instancia:} Un multiconjunto $S = \{s_1, s_2, \ldots, s_n\}$ de enteros positivos.
+        \item \textbf{Pregunta:} ¿Se puede particionar $S$ en dos subconjuntos disjuntos $S_1$ y $S_2$ tales que $S_1 \cup S_2 = S$, $S_1 \cap S_2 = \emptyset$, y $\sum_{s_i \in S_1} s_i = \sum_{s_j \in S_2} s_j$?
+    \end{itemize}
+
+    PARTITION es un caso especial de SUBSET-SUM donde $t = \frac{1}{2}\sum_{s_i \in S} s_i$. A continuación demostramos formalmente su equivalencia.
+
+    \subsubsection{Reducción Polinomial: SUBSET-SUM $\preceq_p$ PARTITION}
 
     Para reducir SUBSET-SUM a PARTITION en tiempo polinomial, proponemos la siguiente construcción:
 
@@ -182,8 +197,8 @@
 
     Esta reducción se realiza en tiempo lineal $O(n)$, demostrando que PARTITION es al menos tan difícil como SUBSET-SUM.
 
-    \subsubsection{Reducción de PARTITION a Transporte Discreto}
-    Una vez establecido que PARTITION es NP-duro, procedemos a reducirlo a nuestro problema de interés. El problema PARTITION se define de la siguiente manera: dado un multiconjunto $S$ de enteros positivos, ¿se puede particionar $S$ en dos subconjuntos $S_1$ y $S_2$ tal que la suma de los elementos en $S_1$ sea igual a la suma de los elementos en $S_2$?
+    \subsubsection{Reducción Polinomial: PARTITION $\preceq_p$ TRANSPORTE DISCRETO}
+    Una vez establecido que PARTITION es NP-duro (por la reducción anterior desde SUBSET-SUM), procedemos a reducirlo a nuestro problema de interés, el Transporte Discreto.
 
     \textbf{Construcción de la Reducción:}
 
