@@ -88,7 +88,7 @@
     Realizar un análisis de complejidad es un paso estratégico fundamental antes de acometer el diseño de algoritmos. Este análisis nos permite determinar la intratabilidad inherente de un problema y, por tanto, establecer si es factible encontrar soluciones óptimas en un tiempo de ejecución razonable. Para el problema del Transporte Discreto, este análisis determina si Discrete Logistics puede garantizar a sus clientes una distribución de riesgo probadamente óptima, o si debe confiar en soluciones ``suficientemente buenas'' que sean computacionalmente rápidas. La conclusión de este análisis justificará la necesidad de explorar algoritmos de aproximación o heurísticas eficientes.
 
     \section{Definición Formal del Problema}
-    Dado un conjunto de $N$ artículos $A = \{a_1, ..., a_n\}$ y $M$ mulas $M = \{m_1, ..., m_m\}$, buscamos una partición tal que:
+    Dado un conjunto de $N$ artículos $A = \{a_1, \ldots, a_n\}$ y $M$ mulas $M = \{m_1, \ldots, m_m\}$, buscamos una partición tal que:
 
     \begin{enumerate}
         \item \textbf{Restricción de Capacidad:} $\sum_{a_i \in A_j} p_i \le C_j$ para toda mula $m_j$.
@@ -127,13 +127,67 @@
     Dado que ambas verificaciones se pueden realizar en un tiempo polinomial ($O(N + M^2)$), el problema de decisión del Transporte Discreto pertenece a la clase \textbf{NP}.
 
     \subsection{Prueba de NP-Dureza por Reducción}
-    Para demostrar que el problema es NP-duro, realizaremos una reducción en tiempo polinomial desde un problema canónico conocido por ser NP-completo: el \textbf{Problema de la Partición (PARTITION)}.
 
-    \subsubsection{Selección del Problema Canónico: PARTITION}
-    El problema PARTITION se define de la siguiente manera: dado un multiconjunto $S$ de enteros positivos, ¿se puede particionar $S$ en dos subconjuntos $S_1$ y $S_2$ tal que la suma de los elementos en $S_1$ sea igual a la suma de los elementos en $S_2$?
+    \subsubsection{Fundamentación: Cadena de Reducciones}
+    Para establecer rigurosamente la dureza del problema del Transporte Discreto, construimos una cadena de reducciones desde un problema origen indiscutiblemente NP-duro. La cadena propuesta es:
+    \[
+    \text{SUBSET-SUM} \preceq_p \text{PARTITION} \preceq_p \text{TRANSPORTE DISCRETO}
+    \]
 
-    \subsubsection{Construcción de la Reducción}
-    Dada una instancia arbitraria del problema PARTITION, definida por un multiconjunto de enteros $S = \{s_1, s_2, ..., s_n\}$, construimos una instancia del problema del Transporte Discreto de la siguiente manera:
+    A continuación, detallamos el primer eslabón de esta cadena para justificar el uso de PARTITION como problema intermedio en nuestra demostración.
+
+    \paragraph{Reducción de SUBSET-SUM a PARTITION}
+    El problema de la Suma de Subconjuntos (SUBSET-SUM) se define así: dado un conjunto finito de enteros $A = \{a_1, \ldots, a_n\}$ y un entero objetivo $t$, ¿existe un subconjunto $A' \subseteq A$ tal que la suma de sus elementos sea exactamente $t$?
+
+    Para reducir SUBSET-SUM a PARTITION en tiempo polinomial, proponemos la siguiente construcción:
+
+    \textbf{Construcción de la Instancia:}
+    Sea $\sigma = \sum_{a_i \in A} a_i$ la suma total de los elementos del conjunto $A$. Construimos una instancia para PARTITION creando un nuevo conjunto $A_{\text{part}}$ que contiene todos los elementos de $A$ más dos elementos adicionales ``pesados'' que forzarán el equilibrio:
+    \[
+    A_{\text{part}} = A \cup \{ J, K \}
+    \]
+    Donde definimos los valores de $J$ y $K$ como:
+    \begin{align*}
+    J &= 2\sigma - t \\
+    K &= \sigma + t
+    \end{align*}
+
+    \textbf{Demostración:}
+    La suma total de los elementos en $A_{\text{part}}$ es:
+    \[
+    \sum A_{\text{part}} = \sigma + J + K = \sigma + (2\sigma - t) + (\sigma + t) = 4\sigma
+    \]
+    Por lo tanto, para que exista una partición válida en $A_{\text{part}}$, cada subconjunto de la partición debe sumar exactamente $2\sigma$.
+
+    \begin{itemize}
+        \item \textbf{Imposibilidad de agrupar J y K:} Notamos que $J + K = 3\sigma$. Dado que $3\sigma > 2\sigma$ (el objetivo de la partición), los elementos $J$ y $K$ nunca pueden estar en el mismo lado de la partición. Deben separarse.
+
+        \item \textbf{($\Rightarrow$) Si SUBSET-SUM tiene solución:}
+        Existe $A' \subseteq A$ tal que $\sum A' = t$.
+        Podemos formar una partición de $A_{\text{part}}$ en dos conjuntos $P_1$ y $P_2$:
+        \begin{itemize}
+            \item $P_1 = A' \cup \{J\}$. La suma es $t + (2\sigma - t) = 2\sigma$.
+            \item $P_2 = (A \setminus A') \cup \{K\}$. La suma es $(\sigma - t) + (\sigma + t) = 2\sigma$.
+        \end{itemize}
+        Ambos suman $2\sigma$, por lo que PARTITION tiene solución.
+
+        \item \textbf{($\Leftarrow$) Si PARTITION tiene solución:}
+        Existe una partición $P_1, P_2$. Como demostramos, $J$ debe estar en uno (digamos $P_1$) y $K$ en el otro ($P_2$).
+        La suma de $P_1$ debe ser $2\sigma$. Como $J = 2\sigma - t$, los elementos restantes en $P_1$ (que deben provenir de $A$) deben sumar la diferencia:
+        \[
+        \sum (P_1 \setminus \{J\}) = 2\sigma - (2\sigma - t) = t
+        \]
+        Por lo tanto, los elementos de $A$ contenidos en $P_1$ forman el subconjunto que suma $t$, resolviendo la instancia de SUBSET-SUM.
+    \end{itemize}
+
+    Esta reducción se realiza en tiempo lineal $O(n)$, demostrando que PARTITION es al menos tan difícil como SUBSET-SUM.
+
+    \subsubsection{Reducción de PARTITION a Transporte Discreto}
+    Una vez establecido que PARTITION es NP-duro, procedemos a reducirlo a nuestro problema de interés. El problema PARTITION se define de la siguiente manera: dado un multiconjunto $S$ de enteros positivos, ¿se puede particionar $S$ en dos subconjuntos $S_1$ y $S_2$ tal que la suma de los elementos en $S_1$ sea igual a la suma de los elementos en $S_2$?
+
+    \textbf{Construcción de la Reducción:}
+
+    Dada una instancia arbitraria del problema PARTITION, definida por un multiconjunto de enteros $S = \{s_1, s_2, \ldots, s_n\}$, construimos una instancia del problema del Transporte Discreto de la siguiente manera:
 
     \begin{itemize}
         \item \textbf{Artículos:} Para cada entero $s_i$ en $S$, creamos un artículo $a_i$ con $peso = s_i$ y $valor = s_i$. Al igualar peso y valor, forzamos a que cualquier equilibrio en valor implique un equilibrio en peso, vinculando así las dos restricciones.
@@ -142,7 +196,8 @@
         \item \textbf{Umbral de Valor:} Establecemos el umbral de diferencia de valor en $K = 0$.
     \end{itemize}
 
-    \subsubsection{Demostración de Equivalencia}
+    \textbf{Demostración de Equivalencia:}
+
     Ahora debemos demostrar que la instancia de PARTITION tiene una solución ``sí'' si y solo si la instancia construida del Transporte Discreto también tiene una solución ``sí''.
 
     \textbf{($\Rightarrow$) Si PARTITION tiene solución:}
@@ -169,7 +224,8 @@
         \item Si definimos $S_1$ como el conjunto de enteros originales correspondientes a los artículos en $m_1$ y $S_2$ los correspondientes a $m_2$, entonces $\sum S_1 = \sum S_2 = T/2$. Esto constituye una solución válida para el problema PARTITION.
     \end{itemize}
 
-    \subsubsection{Análisis de Complejidad de la Reducción}
+    \textbf{Análisis de Complejidad de la Reducción:}
+
     La transformación de una instancia de PARTITION a una del Transporte Discreto implica:
     \begin{itemize}
         \item Calcular la suma total $T$, que requiere $O(n)$ operaciones.
@@ -371,14 +427,14 @@
             \State $Mejora \gets$ VERDADERO
             \While{$Mejora$ ES VERDADERO}
                 \State $Mejora \gets$ FALSO
-                \State $M_{max} \gets$ Mula con mayor valor total
-                \State $M_{min} \gets$ Mula con menor valor total
-                \State $Dif_{actual} \gets M_{max}.valor - M_{min}.valor$
+                \State $M_{\text{max}} \gets$ Mula con mayor valor total
+                \State $M_{\text{min}} \gets$ Mula con menor valor total
+                \State $Dif_{\text{actual}} \gets M_{\text{max}}\text{.valor} - M_{\text{min}}\text{.valor}$
                 \State
                 \State \textbf{// Intento 1: Mover artículo}
-                \For{cada $a$ en $M_{max}.articulos$}
-                    \If{$M_{min}$ puede cargar $a$ Y mejora la diferencia}
-                        \State Mover $a$ de $M_{max}$ a $M_{min}$
+                \For{cada $a$ en $M_{\text{max}}\text{.articulos}$}
+                    \If{$M_{\text{min}}$ puede cargar $a$ Y mejora la diferencia}
+                        \State Mover $a$ de $M_{\text{max}}$ a $M_{\text{min}}$
                         \State $Mejora \gets$ VERDADERO
                         \State \textbf{break}
                     \EndIf
@@ -386,7 +442,7 @@
                 \State
                 \State \textbf{// Intento 2: Intercambio}
                 \If{NO $Mejora$}
-                    \For{cada $a$ en $M_{max}$ Y cada $b$ en $M_{min}$}
+                    \For{cada $a$ en $M_{\text{max}}$ Y cada $b$ en $M_{\text{min}}$}
                         \If{Intercambio válido Y mejora diferencia}
                             \State Intercambiar $a$ y $b$
                             \State $Mejora \gets$ VERDADERO
@@ -424,7 +480,7 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.85\textwidth]{calidad_solucion.png}
+        \includegraphics[width=0.85\textwidth]{../calidad_solucion.png}
         \caption{El algoritmo Greedy presenta picos de error altos (ej. N=8), mientras que la Búsqueda Local reduce drásticamente esta brecha, acercándose al óptimo.}
     \end{figure}
 
@@ -433,7 +489,7 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.85\textwidth]{escalabilidad_tiempo.png}
+        \includegraphics[width=0.85\textwidth]{../escalabilidad_tiempo.png}
         \caption{La Fuerza Bruta crece exponencialmente, volviéndose inútil para $N>15$. Los algoritmos aproximados se mantienen por debajo de 1 segundo incluso con 500 artículos.}
     \end{figure}
 
