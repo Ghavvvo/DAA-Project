@@ -138,7 +138,7 @@
         \[
         \sum_{i=1}^{n} x_{ij} \geq 1 \quad \forall j \in \{1,\ldots,m\}
         \]
-        Cada mula debe llevar al menos un artículo (condición explícita del enunciado: ``utilizando el número exacto de mulas requerido'').
+        Cada mula debe llevar al menos un artículo.
     \end{enumerate}
 
     \subsubsection{Función Objetivo}
@@ -382,7 +382,13 @@
     \end{itemize}
 
     \subsubsection{Análisis de Complejidad}
-    La complejidad computacional de este enfoque es su principal inconveniente. Si hay $N$ artículos y $M$ mulas, cada artículo puede ser asignado a cualquiera de las $M$ mulas. Esto da lugar a un total de $M^N$ posibles asignaciones. Para cada una, se requiere tiempo polinomial para validar las restricciones y calcular la métrica. Por lo tanto, la complejidad temporal total tiene un orden de $O(M^N \cdot (N + M^2))$, que es exponencial. Esta complejidad hace que el método sea practicable únicamente para instancias muy pequeñas del problema.
+    La complejidad computacional de este enfoque es su principal inconveniente. Si hay $N$ artículos y $M$ mulas, cada artículo puede ser asignado a cualquiera de las $M$ mulas. Esto da lugar a un total de $M^N$ posibles asignaciones. Para cada asignación, se debe:
+    \begin{itemize}
+        \item Verificar que respeta las capacidades: $O(N)$
+        \item Verificar que todas las mulas tienen al menos un artículo: $O(M)$
+        \item Calcular la diferencia entre valores máximo y mínimo: $O(M)$
+    \end{itemize}
+    Por lo tanto, la complejidad temporal total es $O(M^N \cdot (N + M))$, que es exponencial. Esta complejidad hace que el método sea practicable únicamente para instancias pequeñas del problema.
 
     \subsubsection{Pseudocódigo}
     \begin{algorithm}[H]
@@ -390,54 +396,40 @@
         \begin{algorithmic}[1]
             \Require Artículos $A$, Mulas $M$
             \Ensure Mejor Asignación
-            \State $Mejor\_Diferencia \gets \infty$
-            \State $Mejor\_Asignacion \gets$ NULO
-            \State
-            \State \textbf{// Generar todas las asignaciones posibles ($M^N$ iteraciones)}
+            \State $Mejor\_Diferencia \gets \infty$, $Mejor\_Asignacion \gets$ NULO
             \For{cada asignación $S$ posible de $A$ en $M$}
-                \State $Es\_Valida \gets$ VERDADERO
-                \State
-                \State \textbf{// 1. Verificar Capacidades}
-                \For{cada mula $m$ en $M$}
-                    \State $Peso\_Total \gets$ Suma de pesos de artículos asignados a $m$ en $S$
-                    \If{$Peso\_Total > Capacidad(m)$}
-                        \State $Es\_Valida \gets$ FALSO
-                        \State \textbf{break}
-                    \EndIf
-                \EndFor
-                \State
-                \State \textbf{// 2. Evaluar Diferencia de Valor (solo si es válida)}
-                \If{$Es\_Valida$ ES VERDADERO}
-                    \State $Max\_Valor \gets \max(Valor\_Total(m)$ para todo $m$ en $M)$
-                    \State $Min\_Valor \gets \min(Valor\_Total(m)$ para todo $m$ en $M)$
-                    \State $Diferencia\_Actual \gets Max\_Valor - Min\_Valor$
-                    \State
-                    \If{$Diferencia\_Actual < Mejor\_Diferencia$}
-                        \State $Mejor\_Diferencia \gets Diferencia\_Actual$
-                        \State $Mejor\_Asignacion \gets S$
+                \If{$S$ respeta capacidades Y todas las mulas tienen $\geq 1$ artículo}
+                    \State $Diferencia \gets \max(Valor(m)) - \min(Valor(m))$ para $m \in M$
+                    \If{$Diferencia < Mejor\_Diferencia$}
+                        \State $Mejor\_Diferencia \gets Diferencia$, $Mejor\_Asignacion \gets S$
+                        \If{$Diferencia = 0$}
+                            \State \Return $Mejor\_Asignacion$ \textbf{// Terminación anticipada}
+                        \EndIf
                     \EndIf
                 \EndIf
             \EndFor
-            \State
             \State \Return $Mejor\_Asignacion$
         \end{algorithmic}
     \end{algorithm}
-    \textbf{Complejidad:} $O(M^N \cdot (N + M^2))$.
+    \textbf{Complejidad:} $O(M^N \cdot (N + M))$.
 
     \subsection{Heurística Voraz (Greedy)}
     \subsubsection{Descripción de la Estrategia}
     Proponemos una heurística voraz (o greedy) diseñada para construir rápidamente una solución de alta calidad. La estrategia se basa en tomar decisiones que parecen óptimas a nivel local en cada paso, con la esperanza de que conduzcan a una buena solución global.
 
-    El algoritmo procede de la siguiente manera:
+    \textbf{El algoritmo implementa una estrategia de dos fases:} primero garantiza que cada mula tenga al menos un artículo (Fase 1), y luego distribuye los artículos restantes de forma voraz balanceando el valor entre las mulas (Fase 2).
+
+    El algoritmo procede en dos fases:
     \begin{enumerate}
-        \item \textbf{Ordenar Artículos:} Primero, se ordenan todos los artículos de mayor a menor valor. La intuición es que al colocar los artículos más ``problemáticos'' (los de mayor valor) primero, se tienen más opciones para balancear la carga.
-        \item \textbf{Asignación Iterativa:} Se itera a través de la lista de artículos ya ordenada.
-        \item \textbf{Criterio de Selección:} Para cada artículo, se busca la mula ``más adecuada''. La mula más adecuada es aquella que cumple dos criterios:
+        \item \textbf{Fase 1 - Garantizar restricción de mulas:} Primero, se ordenan todos los artículos de mayor a menor valor. Luego, se asigna al menos un artículo a cada mula de forma secuencial, asegurando que se cumple la restricción de que todas las mulas deben transportar al menos un artículo. Esta fase requiere verificar que $|A| \geq |M|$ (al menos tantos artículos como mulas).
+
+        \item \textbf{Fase 2 - Asignación voraz de restantes:} Una vez garantizada la restricción, se asignan los artículos restantes siguiendo la estrategia voraz clásica:
         \begin{itemize}
-            \item Debe tener capacidad de peso suficiente para aceptar el artículo actual.
-            \item Entre todas las mulas que cumplen el criterio anterior, se elige aquella que actualmente tiene la suma de valor total más baja. Esta elección busca activamente balancear la distribución de valor en cada paso.
+            \item Para cada artículo no asignado, se busca la mula con menor valor acumulado que tenga capacidad suficiente.
+            \item Esta elección busca activamente balancear la distribución de valor en cada paso.
         \end{itemize}
-        \item \textbf{Manejo de Fallos:} Si en algún punto un artículo no puede ser asignado a ninguna mula (porque ninguna tiene suficiente capacidad restante), el algoritmo concluye que no es posible encontrar una solución con las restricciones dadas.
+
+        \item \textbf{Manejo de Fallos:} Si en cualquier fase un artículo no puede ser asignado (por restricciones de capacidad), el algoritmo concluye que no existe solución factible.
     \end{enumerate}
 
     \subsubsection{Análisis de No-Optimalidad}
@@ -464,56 +456,39 @@
     En este caso, la estrategia voraz produce una diferencia de valor el doble de grande que la óptima, demostrando que no garantiza la mejor solución global.
 
     \subsubsection{Análisis de Complejidad}
-    La complejidad computacional del algoritmo voraz es significativamente más baja que la del enfoque de fuerza bruta:
+    La complejidad computacional del algoritmo voraz con dos fases:
     \begin{enumerate}
         \item \textbf{Ordenación inicial:} El paso dominante es la ordenación de los $N$ artículos por valor, que tiene una complejidad de $O(N \log N)$.
-        \item \textbf{Asignación:} El bucle principal itera $N$ veces (una por cada artículo). Dentro del bucle, se debe encontrar la mejor mula entre las $M$ disponibles, lo que toma $O(M)$ tiempo. Por lo tanto, esta fase tiene una complejidad de $O(N \cdot M)$.
+        \item \textbf{Fase 1 - Garantizar restricción:} Se itera sobre las $M$ mulas, y para cada una se busca un artículo disponible entre los $N$ artículos no asignados. En cada búsqueda se pueden revisar hasta $N$ artículos antes de encontrar uno que quepa. Por lo tanto, el costo de esta fase es $O(M \cdot N)$, donde se asigna exactamente un artículo a cada una de las $M$ mulas.
+        \item \textbf{Fase 2 - Asignación voraz:} Se iteran los $N - M$ artículos restantes, y para cada uno se busca entre las $M$ mulas la que tiene menor valor y capacidad suficiente. Esto toma $O((N-M) \cdot M) = O(N \cdot M)$.
     \end{enumerate}
 
-    La complejidad total del algoritmo es $O(N \log N + N \cdot M)$, que es de tiempo polinomial y, por lo tanto, muy eficiente y escalable para instancias grandes del problema.
+    La complejidad total del algoritmo es $O(N \log N + M \cdot N + N \cdot M) = O(N \log N + N \cdot M)$ (dado que $N \cdot M$ domina), que es de tiempo polinomial y muy eficiente para instancias grandes del problema.
 
     \subsubsection{Pseudocódigo}
     \begin{algorithm}[H]
         \caption{Heurística Voraz (Greedy)}
         \begin{algorithmic}[1]
             \Require Artículos $A$, Mulas $M$
-            \Ensure Asignación de artículos a mulas
-            \State \textbf{// Ordenar de mayor a menor valor} ($O(N \log N)$)
+            \Ensure Asignación válida
+            \If{$|A| < |M|$}
+                \State \Return ERROR
+            \EndIf
             \State Ordenar $A$ descendentemente por valor
+            \State Inicializar todas las mulas vacías
             \State
-            \State \textbf{// Inicializar mulas}
+            \State \textbf{// FASE 1: Garantizar 1 artículo por mula}
+            \State $Asignados \gets \emptyset$
             \For{cada mula $m$ en $M$}
-                \State $m.peso\_actual \gets 0$
-                \State $m.valor\_actual \gets 0$
-                \State $m.articulos \gets$ ListaVacia
+                \State Asignar a $m$ el primer artículo disponible que quepa
+                \State $Asignados \gets Asignados \cup \{articulo\}$
             \EndFor
             \State
-            \State \textbf{// Proceso de asignación} ($O(N \cdot M)$)
-            \For{cada articulo $art$ en $A$}
-                \State $Mula\_Candidata \gets$ NULO
-                \State $Menor\_Valor\_Encontrado \gets \infty$
-                \State
-                \State \textbf{// Buscar la mula válida con menos carga de valor actual}
-                \For{cada mula $m$ en $M$}
-                    \If{$(m.peso\_actual + art.peso) \leq m.capacidad$}
-                        \If{$m.valor\_actual < Menor\_Valor\_Encontrado$}
-                            \State $Menor\_Valor\_Encontrado \gets m.valor\_actual$
-                            \State $Mula\_Candidata \gets m$
-                        \EndIf
-                    \EndIf
-                \EndFor
-                \State
-                \State \textbf{// Asignar o reportar fallo}
-                \If{$Mula\_Candidata$ ES DISTINTO DE NULO}
-                    \State Agregar $art$ a $Mula\_Candidata.articulos$
-                    \State $Mula\_Candidata.peso\_actual \gets Mula\_Candidata.peso\_actual + art.peso$
-                    \State $Mula\_Candidata.valor\_actual \gets Mula\_Candidata.valor\_actual + art.valor$
-                \Else
-                    \State \Return ERROR ``No es posible asignar el artículo bajo esta heurística''
-                \EndIf
+            \State \textbf{// FASE 2: Asignar restantes a mula con menor valor}
+            \For{cada $art$ en $A \setminus Asignados$}
+                \State Asignar $art$ a la mula con menor valor que pueda cargarlo
             \EndFor
-            \State
-            \State \Return $M$ (con sus asignaciones)
+            \State \Return $M$
         \end{algorithmic}
     \end{algorithm}
     \textbf{Complejidad:} $O(N \log N + N \cdot M)$.
@@ -535,49 +510,46 @@
     \subsubsection{Análisis de Complejidad de la Metaheurística}
     La fase de construcción voraz mantiene su complejidad de $O(N \log N + N \cdot M)$. La fase de Búsqueda Local depende del número de mejoras posibles. En el peor caso teórico, podría ser pseudo-polinomial dependiendo de los valores, pero en la práctica se suele limitar por un número máximo de iteraciones $K$ (ej. 1000 iteraciones).
 
-    En cada iteración de mejora, revisamos los artículos de las mulas con carga máxima y mínima (aproximadamente $N/M$ artículos). Por tanto, la complejidad efectiva es $O(N \log N + K \cdot (N/M)^2)$. Dado que $K$ y $N$ son manejables en escenarios logísticos reales, el algoritmo sigue siendo extremadamente eficiente comparado con la fuerza bruta, ofreciendo ahora una calidad de solución superior al evitar óptimos locales simples.
+    En cada iteración de mejora se realizan las siguientes operaciones:
+    \begin{itemize}
+        \item Ordenar las $M$ mulas para identificar la de mayor y menor valor: $O(M \log M)$.
+        \item \textbf{Intento 1 (Reubicación):} Revisar los artículos de la mula con mayor valor para intentar moverlos a la de menor valor. Si los artículos están distribuidos equitativamente, esto toma $O(N/M)$.
+        \item \textbf{Intento 2 (Intercambio):} Si no hay reubicación exitosa, se intenta intercambiar artículos entre ambas mulas. Esto requiere revisar todos los pares posibles de artículos, lo que toma $O((N/M)^2)$.
+    \end{itemize}
+
+    Por tanto, la complejidad de cada iteración es $O(M \log M + (N/M)^2)$. Con un máximo de $K$ iteraciones, la complejidad total del algoritmo es:
+    \[
+    O(N \log N + N \cdot M + K \cdot (M \log M + (N/M)^2))
+    \]
+
+    Dado que $K$, $M$ y $N$ son manejables en escenarios logísticos reales (típicamente $M \ll N$ y $K \leq 1000$), el algoritmo sigue siendo extremadamente eficiente comparado con la fuerza bruta, ofreciendo ahora una calidad de solución superior al evitar óptimos locales simples.
 
     \subsubsection{Pseudocódigo}
     \begin{algorithm}[H]
-        \caption{Heurística con Búsqueda Local (Hill Climbing)}
+        \caption{Búsqueda Local (Hill Climbing)}
         \begin{algorithmic}[1]
             \Require Artículos $A$, Mulas $M$
             \Ensure Asignación mejorada
-            \State \textbf{// FASE 1: Construcción Voraz}
-            \State Ordenar $A$ descendentemente por valor
-            \For{cada articulo $art$ en $A$}
-                \State $Mejor\_Mula \gets$ Mula con menor valor actual que pueda cargar $art$
-                \If{$Mejor\_Mula$ existe}
-                    \State Asignar $art$ a $Mejor\_Mula$
-                \Else
-                    \State \Return ERROR
-                \EndIf
-            \EndFor
-            \State
-            \State \textbf{// FASE 2: Refinamiento (Búsqueda Local)}
+            \State $M \gets$ Heuristica\_Voraz$(A, M)$
             \State $Mejora \gets$ VERDADERO
-            \While{$Mejora$ ES VERDADERO}
+            \While{$Mejora$}
                 \State $Mejora \gets$ FALSO
-                \State $M_{\text{max}} \gets$ Mula con mayor valor total
-                \State $M_{\text{min}} \gets$ Mula con menor valor total
-                \State $Dif_{\text{actual}} \gets M_{\text{max}}\text{.valor} - M_{\text{min}}\text{.valor}$
+                \State $M_{max} \gets$ Mula con mayor valor, $M_{min} \gets$ Mula con menor valor
                 \State
-                \State \textbf{// Intento 1: Mover artículo}
-                \For{cada $a$ en $M_{\text{max}}\text{.articulos}$}
-                    \If{$M_{\text{min}}$ puede cargar $a$ Y mejora la diferencia}
-                        \State Mover $a$ de $M_{\text{max}}$ a $M_{\text{min}}$
-                        \State $Mejora \gets$ VERDADERO
-                        \State \textbf{break}
+                \State \textbf{// Intento 1: Mover artículo (sin dejar mula vacía)}
+                \For{cada $a$ en $M_{max}$ con $|M_{max}| > 1$}
+                    \If{$M_{min}$ puede cargar $a$ Y mejora diferencia}
+                        \State Mover $a$ de $M_{max}$ a $M_{min}$
+                        \State $Mejora \gets$ VERDADERO, \textbf{break}
                     \EndIf
                 \EndFor
                 \State
-                \State \textbf{// Intento 2: Intercambio}
+                \State \textbf{// Intento 2: Intercambiar artículos}
                 \If{NO $Mejora$}
-                    \For{cada $a$ en $M_{\text{max}}$ Y cada $b$ en $M_{\text{min}}$}
+                    \For{cada $a$ en $M_{max}$, $b$ en $M_{min}$}
                         \If{Intercambio válido Y mejora diferencia}
                             \State Intercambiar $a$ y $b$
-                            \State $Mejora \gets$ VERDADERO
-                            \State \textbf{break}
+                            \State $Mejora \gets$ VERDADERO, \textbf{break}
                         \EndIf
                     \EndFor
                 \EndIf
@@ -596,8 +568,14 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.85\textwidth]{experimento1_calidad}
-        \caption{Comparación de calidad: La Búsqueda Local alcanza el óptimo en más del 50\% de las instancias, superando significativamente a la heurística voraz.}
+        \includegraphics[width=0.85\textwidth]{1}
+        \caption{Comparación de calidad de soluciones: Análisis del rendimiento de los algoritmos.}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{2}
+        \caption{Resultados detallados: La Búsqueda Local alcanza el óptimo en más del 50\% de las instancias, superando significativamente a la heurística voraz.}
     \end{figure}
 
 
@@ -611,12 +589,14 @@
     \end{figure}
 
     \subsection{Escalabilidad}
-    Considerando un minuto como límite razonable para aplicaciones prácticas, el análisis determina que el algoritmo de fuerza bruta puede resolver instancias de hasta 17 artículos distribuidas entre 4 mulas, requiriendo aproximadamente 50 segundos para el caso más exigente dentro de este umbral. Este límite, correspondiente a un producto $N \times M$ de aproximadamente 50 unidades, marca la frontera donde la explosión combinatoria inherente al problema ---con su crecimiento exponencial $m^n$--- se vuelve computacionalmente inmanejable.
+    Considerando un minuto como límite razonable para aplicaciones prácticas, el análisis experimental determina que el algoritmo de fuerza bruta alcanza su límite de viabilidad práctica alrededor de 12-13 artículos con 4 mulas. Para $N=13$ y $M=4$, el algoritmo debe explorar $4^{13} = 67{,}108{,}864$ posibles asignaciones .
+
+    La optimización de terminación anticipada implementada en el código que detiene la búsqueda cuando encuentra una solución perfecta con diferencia de valor igual a cero puede reducir significativamente el tiempo de ejecución en casos favorables.
 
     \begin{figure}[H]
         \centering
         \includegraphics[width=0.85\textwidth]{analisis_limite_fuerza_bruta}
-        \caption{Límite de escalabilidad: La fuerza bruta alcanza su límite práctico en $N \times M \approx 50$, mientras que las heurísticas mantienen tiempos despreciables incluso para instancias grandes.}
+        \caption{Límite de escalabilidad: La fuerza bruta alcanza su límite práctico alrededor de $N=12{-}13$ artículos con $M=4$ mulas ($4^{13} \approx 67$ millones de operaciones), mientras que las heurísticas mantienen tiempos despreciables incluso para instancias grandes.}
     \end{figure}
 
     \subsection{Comportamiento de la Solución Propuesta}
@@ -636,7 +616,7 @@
     Además, su capacidad de escape de regiones subóptimas es limitada, ya que no incorpora mecanismos como reinicios aleatorios, temperado simulado, o movimientos de mayor complejidad . La búsqueda local logra encontrar soluciones óptimas cuando el paisaje de soluciones es relativamente suave y la solución inicial cae dentro de la cuenca de atracción del óptimo global, pero falla en problemas con interdependencias complejas donde se requieren reestructuraciones más profundas de la asignación.
 
     \section{Conclusión}
-    El análisis experimental sobre 112 instancias variadas confirma la intratabilidad del problema mediante fuerza bruta, estableciendo un límite práctico en $N \times M \approx 50$ unidades dentro de un minuto de ejecución. La búsqueda local emerge como la solución más efectiva, alcanzando el óptimo en más del 50\% de las instancias mientras mantiene tiempos de ejecución en fracciones de milisegundo, superando significativamente a la heurística voraz. Esta combinación de alta calidad de solución y eficiencia computacional extrema valida la viabilidad de las heurísticas propuestas para satisfacer los requisitos operativos de \textit{Discrete Logistics} .
+    El análisis experimental sobre 112 instancias variadas confirma la intratabilidad del problema mediante fuerza bruta, estableciendo un límite práctico alrededor de $N=12{-}13$ artículos con $M=4$ mulas dentro de un minuto de ejecución. Este límite ilustra claramente la explosión combinatoria exponencial característica de problemas NP-duros. La búsqueda local emerge como la solución más efectiva, alcanzando el óptimo en más del 50\% de las instancias mientras mantiene tiempos de ejecución en fracciones de milisegundo, superando significativamente a la heurística voraz. Esta combinación de alta calidad de solución y eficiencia computacional extrema valida la viabilidad de las heurísticas propuestas para satisfacer los requisitos operativos de \textit{Discrete Logistics}.
 
 \end{document}
 

@@ -29,14 +29,16 @@ def fuerza_bruta(articulos, mulas_plantilla):
                 es_valida = False
                 break
 
+        # Verificar que todas las mulas tengan al menos un artículo
         if es_valida:
-            diferencia = calcular_metrica(mulas_temp)
-            if diferencia < mejor_diferencia:
-                mejor_diferencia = diferencia
-                mejor_solucion = mulas_temp
+            if all(len(mula.articulos) > 0 for mula in mulas_temp):
+                diferencia = calcular_metrica(mulas_temp)
+                if diferencia < mejor_diferencia:
+                    mejor_diferencia = diferencia
+                    mejor_solucion = mulas_temp
 
-                if mejor_diferencia == 0:
-                    return mejor_solucion, mejor_diferencia
+                    if mejor_diferencia == 0:
+                        return mejor_solucion, mejor_diferencia
 
     return mejor_solucion, mejor_diferencia
 
@@ -48,7 +50,32 @@ def heuristica_voraz(articulos, mulas_plantilla):
     mulas = [Mula(m.id, m.capacidad) for m in mulas_plantilla]
     articulos_ordenados = sorted(articulos, key=lambda x: x.valor, reverse=True)
 
-    for art in articulos_ordenados:
+    n_mulas = len(mulas)
+    n_articulos = len(articulos_ordenados)
+
+    # Verificar que haya al menos tantos artículos como mulas
+    if n_articulos < n_mulas:
+        return None, float('inf')  # Imposible asignar un artículo a cada mula
+
+    # Fase 1: Asignar al menos un artículo a cada mula (round-robin)
+    articulos_asignados = set()
+    for idx_mula in range(n_mulas):
+        asignado = False
+        for idx_art, art in enumerate(articulos_ordenados):
+            if idx_art not in articulos_asignados:
+                if mulas[idx_mula].agregar_articulo(art):
+                    articulos_asignados.add(idx_art)
+                    asignado = True
+                    break
+
+        if not asignado:
+            return None, float('inf')  # No se pudo asignar a esta mula
+
+    # Fase 2: Asignar artículos restantes con estrategia voraz
+    for idx_art, art in enumerate(articulos_ordenados):
+        if idx_art in articulos_asignados:
+            continue  # Ya fue asignado en Fase 1
+
         mula_candidata = None
         menor_valor_actual = float('inf')
 
@@ -88,7 +115,12 @@ def busqueda_local(articulos, mulas_plantilla, max_iter=1000):
 
         dif_actual = mula_max.valor_actual - mula_min.valor_actual
 
+        # Intento 1: Mover artículos de mula_max a mula_min
         for art in list(mula_max.articulos):
+            # Verificar que mula_max no se quede vacía
+            if len(mula_max.articulos) <= 1:
+                continue
+
             if mula_min.peso_actual + art.peso <= mula_min.capacidad:
                 nuevo_val_max = mula_max.valor_actual - art.valor
                 nuevo_val_min = mula_min.valor_actual + art.valor
@@ -103,6 +135,7 @@ def busqueda_local(articulos, mulas_plantilla, max_iter=1000):
         if mejora_encontrada:
             continue
 
+        # Intento 2: Intercambio de artículos
         for art_max in list(mula_max.articulos):
             for art_min in list(mula_min.articulos):
                 peso_nuevo_max = mula_max.peso_actual - art_max.peso + art_min.peso
