@@ -413,6 +413,16 @@
     \end{algorithm}
     \textbf{Complejidad:} $O(M^N \cdot (N + M))$.
 
+    \subsection{Kernelización Básica}
+    Para mejorar el rendimiento de los algoritmos posteriores, implementamos una fase de preprocesamiento basada en dos reglas de kernelización que reducen el tamaño de la instancia sin afectar la factibilidad ni la optimalidad de la solución:
+
+    \begin{itemize}
+        \item \textbf{Eliminación de instancias infactibles:} Si existe algún artículo cuyo peso supera la capacidad máxima entre todas las mulas ($w_i > \max_j C_j$), la instancia se declara inmediatamente infactible, ya que dicho artículo no puede ser asignado a ninguna mula sin violar las restricciones de capacidad.
+        \item \textbf{Fijación de artículos de asignación única:} Para cada artículo que solo puede ser cargado por una única mula (es decir, $w_i \leq C_j$ para exactamente una mula $j$ y $w_i > C_k$ para toda $k \neq j$), se fija su asignación de antemano ($x_{ij} = 1$). Esto reduce el número de variables de decisión y simplifica la instancia restante.
+    \end{itemize}
+
+    Estas reglas se aplican en tiempo $O(n \cdot m)$ y permiten descartar casos triviales, además de reducir el espacio de búsqueda en problemas con restricciones de capacidad ajustadas. Si bien esta kernelización básica no garantiza un tamaño polinomial del kernel, en la práctica logra una reducción significativa para instancias con artículos ``grandes'' o capacidades heterogéneas.
+
     \subsection{Heurística Voraz (Greedy)}
     \subsubsection{Descripción de la Estrategia}
     Proponemos una heurística voraz (o greedy) diseñada para construir rápidamente una solución de alta calidad. La estrategia se basa en tomar decisiones que parecen óptimas a nivel local en cada paso, con la esperanza de que conduzcan a una buena solución global.
@@ -431,29 +441,6 @@
 
         \item \textbf{Manejo de Fallos:} Si en cualquier fase un artículo no puede ser asignado (por restricciones de capacidad), el algoritmo concluye que no existe solución factible.
     \end{enumerate}
-
-    \subsubsection{Análisis de No-Optimalidad}
-    Este enfoque es una heurística porque las decisiones locales no garantizan la optimalidad global. Considere un escenario con 2 mulas ($M=2$) con capacidad de peso suficiente (ej. 20) y 5 artículos con los siguientes valores (y pesos iguales al valor): $A=5, B=5, C=4, D=4, E=4$.
-
-    \textbf{Comportamiento Voraz:}
-    \begin{enumerate}
-        \item Ordena los artículos: 5, 5, 4, 4, 4.
-        \item Asigna 5 a Mula 1 (Suma: 5).
-        \item Asigna 5 a Mula 2 (Suma: 5).
-        \item Asigna 4 a Mula 1 (Suma: 9).
-        \item Asigna 4 a Mula 2 (Suma: 9).
-        \item Asigna el último 4 a Mula 1 (Suma: 13).
-    \end{enumerate}
-    \textbf{Resultado Voraz:} Mula 1 = 13, Mula 2 = 9. Diferencia = 4.
-
-    \textbf{Solución Óptima:}
-    \begin{itemize}
-        \item Mula 1: $5 + 5 = 10$.
-        \item Mula 2: $4 + 4 + 4 = 12$.
-    \end{itemize}
-    \textbf{Resultado Óptimo:} Diferencia = 2.
-
-    En este caso, la estrategia voraz produce una diferencia de valor el doble de grande que la óptima, demostrando que no garantiza la mejor solución global.
 
     \subsubsection{Análisis de Complejidad}
     La complejidad computacional del algoritmo voraz con dos fases:
@@ -562,9 +549,7 @@
     Los experimentos fueron ejecutados mediante un notebook Jupyter en Python que implementa un generador sistemático de casos de prueba con semilla fija para garantizar reproducibilidad. Se generaron múltiples instancias variadas organizadas en categorías balanceadas según diferentes tamaños y tipos de escenario. Cada instancia fue evaluada con los tres algoritmos implementados ---Fuerza Bruta, Greedy y Búsqueda Local--- aplicando límites de tiempo mediante control de timeout para casos computacionalmente costosos. Los resultados se almacenaron en estructuras de datos que permitieron análisis cuantitativos de calidad de solución, tiempos de ejecución y escalabilidad.
 
     \subsection{Calidad de la Solución}
-    Los resultados demuestran que las heurísticas propuestas ofrecen un equilibrio notable entre eficiencia computacional y calidad de solución para el problema de Discrete Logistics. La búsqueda local emerge como una estrategia particularmente efectiva, logrando alcanzar la solución óptima en más de la mitad de las instancias analizadas, lo que representa un avance significativo respecto a la heurística voraz básica. Este éxito se debe a su capacidad inteligente para refinar iterativamente soluciones iniciales mediante intercambios locales bien dirigidos entre mulas, demostrando que mejoras incrementales pueden acercarse considerablemente al óptimo global incluso en problemas combinatorios complejos.
-
-    La heurística voraz, aunque con resultados más modestos, proporciona una base sólida y computacionalmente eficiente que funciona especialmente bien en escenarios con alta variabilidad en los valores de los artículos. Su simplicidad la convierte en una opción valiosa para instancias muy grandes donde el tiempo de ejecución es crítico, estableciendo un punto de partida que posteriormente puede ser mejorado.
+    Los resultados demuestran que las heurísticas propuestas ofrecen un equilibrio notable entre eficiencia computacional y calidad de solución para el problema de Discrete Logistics. La búsqueda local emerge como una estrategia particularmente efectiva, logrando alcanzar la solución óptima en más de la mitad de las instancias analizadas, lo que representa un avance significativo respecto a la heurística voraz básica. Este éxito se debe a su capacidad inteligente para refinar iterativamente soluciones óptimas en un tiempo de ejecución razonable. La heurística voraz, aunque con resultados más modestos, proporciona una base sólida y computacionalmente eficiente que funciona especialmente bien en escenarios con alta variabilidad en los valores de los artículos. Su simplicidad la convierte en una opción valiosa para instancias muy grandes donde el tiempo de ejecución es crítico, estableciendo un punto de partida que posteriormente puede ser mejorado.
 
     \begin{figure}[H]
         \centering

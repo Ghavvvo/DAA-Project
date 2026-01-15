@@ -1,5 +1,34 @@
 import itertools
 from .modelos import Mula
+
+def kernelizacion_basica(articulos, mulas_plantilla):
+    """
+    Aplica kernelización básica: elimina instancias infactibles y fija artículos de asignación única.
+    Devuelve: es_factible, articulos_reducidos, mulas_actualizadas
+    """
+    # Copiar mulas para no modificar las originales
+    mulas = [Mula(m.id, m.capacidad) for m in mulas_plantilla]
+
+    # Regla 1: Verificar instancias infactibles
+    max_capacidad = max(m.capacidad for m in mulas)
+    for art in articulos:
+        if art.peso > max_capacidad:
+            return False, None, None  # Infactible
+
+    # Regla 2: Fijar artículos de asignación única
+    articulos_reducidos = []
+    for art in articulos:
+        mulas_posibles = [m for m in mulas if m.peso_actual + art.peso <= m.capacidad]
+        if len(mulas_posibles) == 1:
+            # Asignar fijo
+            mula = mulas_posibles[0]
+            mula.agregar_articulo(art)
+        elif len(mulas_posibles) > 1:
+            articulos_reducidos.append(art)
+        # Si len == 0, pero ya verificamos que al menos una puede, ya que max_cap >= art.peso
+
+    return True, articulos_reducidos, mulas
+
 def calcular_metrica(mulas):
     """
     Calcula la diferencia de valor entre la mula más rica y la más pobre.
@@ -46,20 +75,30 @@ def fuerza_bruta(articulos, mulas_plantilla):
 def heuristica_voraz(articulos, mulas_plantilla):
     """
     Ordena los artículos por valor y los asigna a la mula que tenga menos valor y pueda llevarlo.
+    Incluye kernelización básica como preprocesamiento.
     """
-    mulas = [Mula(m.id, m.capacidad) for m in mulas_plantilla]
-    articulos_ordenados = sorted(articulos, key=lambda x: x.valor, reverse=True)
+    # Aplicar kernelización
+    es_factible, articulos_reducidos, mulas = kernelizacion_basica(articulos, mulas_plantilla)
+    if not es_factible:
+        return None, float('inf')
+
+    articulos_ordenados = sorted(articulos_reducidos, key=lambda x: x.valor, reverse=True)
 
     n_mulas = len(mulas)
     n_articulos = len(articulos_ordenados)
 
-    # Verificar que haya al menos tantos artículos como mulas
-    if n_articulos < n_mulas:
-        return None, float('inf')  # Imposible asignar un artículo a cada mula
+    # Contar mulas que aún no tienen artículos
+    mulas_vacias = sum(1 for m in mulas if len(m.articulos) == 0)
 
-    # Fase 1: Asignar al menos un artículo a cada mula (round-robin)
+    # Verificar que haya suficientes artículos para las mulas vacías
+    if n_articulos < mulas_vacias:
+        return None, float('inf')  # Imposible asignar un artículo a cada mula vacía
+
+    # Fase 1: Asignar al menos un artículo a cada mula vacía (round-robin)
     articulos_asignados = set()
     for idx_mula in range(n_mulas):
+        if len(mulas[idx_mula].articulos) > 0:
+            continue  # Ya tiene artículos de kernelización
         asignado = False
         for idx_art, art in enumerate(articulos_ordenados):
             if idx_art not in articulos_asignados:
@@ -159,4 +198,3 @@ def busqueda_local(articulos, mulas_plantilla, max_iter=1000):
                 break
 
     return solucion_actual, calcular_metrica(solucion_actual)
-
