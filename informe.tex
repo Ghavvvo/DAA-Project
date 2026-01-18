@@ -183,8 +183,17 @@
     Hemos demostrado que el problema del Transporte Discreto está en la clase NP y que es NP-duro. Por definición, un problema que cumple ambas condiciones es \textbf{NP-completo}. Esta clasificación confirma su intratabilidad computacional, lo que significa que es altamente improbable que exista un algoritmo que pueda encontrar la solución óptima para todas las instancias en tiempo polinomial. Ante esta realidad, la siguiente fase de nuestro proyecto se centrará en el diseño de algoritmos prácticos para abordarlo.
 
     \subsection{Esquemas de Aproximación en Tiempo Polinomial (PTAS)}
-    Dado que el número de mulas m es un parámetro variable de entrada, el problema del Transporte Discreto generaliza el problema de Multi-Way Number Partitioning. Este último ha sido demostrado como APX-hard, lo que implica que existe un factor de aproximación constante por debajo del cual es imposible descender en tiempo polinomial (a menos que P=NP). Por lo tanto, no es posible diseñar un PTAS que garantice una solución (1+ε) para cualquier m y ε en tiempo polinomial.
 
+    El problema del Transporte Discreto, con el objetivo de minimizar la diferencia máxima de valor entre mulas \(D_{max}\), está íntimamente relacionado con el problema clásico de \textbf{Multi-Way Number Partitioning (MWNP)}. Mientras que MWNP busca minimizar la suma máxima entre los grupos, nuestro problema impone una restricción más fuerte al requerir que todas las sumas sean similares, no solo que ninguna sea excesivamente grande.
+
+    Esta relación tiene consecuencias importantes para la aproximabilidad del problema:
+
+    \begin{enumerate}
+    \item \textbf{Herencia de APX-hardness}: MWNP es conocido por ser \textbf{APX-hard} para un número variable de grupos $k$ \cite{korf1998optimal}. Dado que nuestro problema es \textbf{estrictamente más restrictivo} que MWNP (toda solución con $D_{max}$ pequeña automáticamente tiene suma máxima cercana al promedio, pero no viceversa), hereda esta propiedad de APX-hardness.
+
+    \item \textbf{Inexistencia de PTAS para m variable}: Un PTAS garantizaría una solución $(1+\varepsilon)$-aproximada en tiempo polinomial para \textbf{cualquier} $\varepsilon > 0$. Sin embargo, la APX-hardness de MWNP implica que existe una constante $c > 1$ tal que es NP-difícil aproximar el problema mejor que $c$ para m variable. Por lo tanto, \textbf{no es posible diseñar un PTAS para el problema general} del Transporte Discreto cuando m es parte de la entrada, a menos que P = NP.
+
+    \end{enumerate}
     \section{Diseño de Algoritmos (Fase 3)}
     Tras demostrar la NP-completitud del problema, reconocemos que la búsqueda de soluciones óptimas para instancias de tamaño realista es computacionalmente inviable. Por lo tanto, esta sección explora dos enfoques algorítmicos complementarios. Primero, se describe un algoritmo de fuerza bruta que, aunque ineficiente, garantiza encontrar la solución óptima y sirve como una valiosa referencia para evaluar la calidad de otras soluciones en casos pequeños. Segundo, se diseña una heurística voraz y eficiente, concebida para encontrar soluciones de alta calidad en un tiempo razonable para los casos de uso más realistas.
 
