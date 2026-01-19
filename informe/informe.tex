@@ -545,6 +545,18 @@
         \end{algorithmic}
     \end{algorithm}
 
+    \subsection{Esquemas de Aproximación Polinomiales (PTAS)}
+
+El problema del Transporte Discreto, con el objetivo de minimizar la diferencia máxima de valor entre mulas \(D_{max}\), está íntimamente relacionado con el problema clásico de \textbf{Multi-Way Number Partitioning (MWNP)}. Mientras que MWNP busca minimizar la suma máxima entre los grupos, nuestro problema impone una restricción más fuerte al requerir que todas las sumas sean similares, no solo que ninguna sea excesivamente grande.
+
+Esta relación tiene consecuencias importantes para la aproximabilidad del problema:
+
+\begin{enumerate}
+\item \textbf{Herencia de APX-hardness}: MWNP es conocido por ser \textbf{APX-hard} para un número variable de grupos $k$ . Dado que nuestro problema es \textbf{estrictamente más restrictivo} que MWNP (toda solución con $D_{max}$ pequeña automáticamente tiene suma máxima cercana al promedio, pero no viceversa), hereda esta propiedad de APX-hardness.
+
+
+\end{enumerate}
+
     \section{Análisis Experimental (Fase 4)}
     Los experimentos fueron ejecutados mediante un notebook Jupyter en Python que implementa un generador sistemático de casos de prueba con semilla fija para garantizar reproducibilidad. Se generaron múltiples instancias variadas organizadas en categorías balanceadas según diferentes tamaños y tipos de escenario. Cada instancia fue evaluada con los tres algoritmos implementados ---Fuerza Bruta, Greedy y Búsqueda Local--- aplicando límites de tiempo mediante control de timeout para casos computacionalmente costosos. Los resultados se almacenaron en estructuras de datos que permitieron análisis cuantitativos de calidad de solución, tiempos de ejecución y escalabilidad.
 
